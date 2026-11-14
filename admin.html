@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>珍名アパート図鑑 - ローカル管理・データ生成ツール (admin.html)</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root { --primary: #2563eb; --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding: 20px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    h1 { font-size: 1.5rem; margin: 0; }
+    
+    /* ドロップゾーン */
+    #dropZone {
+      border: 2px dashed #94a3b8; border-radius: 12px; background: #fff; padding: 30px;
+      text-align: center; cursor: pointer; transition: 0.2s; margin-bottom: 20px;
+    }
+    #dropZone.dragover { border-color: var(--primary); background: #eff6ff; }
+    #dropZone p { margin: 5px 0; color: #475569; }
+
+    /* メインレイアウト */
+    .workspace { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 800px) { .workspace { grid-template-columns: 1fr; } }
+
+    #map { height: 450px; border-radius: 12px; border: 1px solid var(--border); position: sticky; top: 20px; }
+    
+    /* 物件カードリスト */
+    .item-list { display: flex; flex-direction: column; gap: 15px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: 0.2s;
+    }
+    .card.active { border: 2px solid var(--primary); }
+    .card-header { display: flex; gap: 15px; margin-bottom: 12px; }
+    .card-thumb { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; background: #eee; flex-shrink: 0; }
+    .card-fields { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    
+    input[type="text"], textarea {
+      width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #cbd5e1;
+      border-radius: 6px; font-size: 0.95rem; font-family: inherit;
+    }
+    textarea { resize: vertical; min-height: 75px; }
+    
+    .meta-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #64748b; margin-top: 8px; }
+    .badge { padding: 2px 8px; border-radius: 99px; font-weight: bold; }
+    .badge.gps-ok { background: #dcfce7; color: #166534; }
+    .badge.gps-none { background: #fee2e2; color: #991b1b; }
+
+    /* ボタン類 */
+    button {
+      background: var(--primary); color: #fff; border: none; padding: 8px 14px;
+      border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+    }
+    button:hover { opacity: 0.9; }
+    button.secondary { background: #64748b; }
+    button.outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); padding: 4px 10px; font-size: 0.8rem; }
+    button.danger { background: #ef4444; padding: 4px 10px; font-size: 0.8rem; }
+
+    .export-bar {
+      background: #1e293b; color: #fff; padding: 15px 20px; border-radius: 12px;
+      margin-top: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div>
+      <h1>🏢 珍名アパート図鑑 - データ作成ツール</h1>
+      <small style="color:#64748b;">ローカル専用：写真は外部サーバーに送信されず、PC内だけで安全に処理されます</small>
+    </div>
+    <div>
+      <button class="secondary" onclick="document.getElementById('jsonInput').click()">📂 既存の data.json を読み込む</button>
+      <input type="file" id="jsonInput" accept=".json" style="display:none" />
+    </div>
+  </header>
+
+  <div id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <p style="font-size:1.1rem; font-weight:bold;">📸 ここにアパートの写真をドラッグ＆ドロップ（複数枚OK）</p>
+    <p>またはクリックしてファイルを選択（JPG / PNG / HEIC対応）</p>
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
+  </div>
+
+  <div class="workspace">
+    <!-- 左側：編集リスト -->
+    <div class="item-list" id="itemList">
+      <p style="color:#94a3b8; text-align:center; padding:40px 0;">写真をドロップするとここに編集カードが追加されます</p>
+    </div>
+
+    <!-- 右側：地図 -->
+    <div>
+      <div id="map"></div>
+      <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
+        💡 <strong>操作ヒント：</strong>カードを選択した状態で地図をクリックすると、ピンの位置を修正・手動設定できます。
+      </p>
+    </div>
+  </div>
+
+  <div class="export-bar">
+    <div>
+      <strong>GitHub Pages 公開用データ書き出し</strong><br>
+      <small style="color:#cbd5e1;">Exif(位置情報)を削除・リサイズした画像と、data.json を一括ダウンロードします</small>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="exportAll()">📦 公開用ファイル一式（JSON + 画像）を保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ライブラリ読み込み -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+  // ★ブラウザが勝手にファイルを開いてしまう挙動を完全に防止
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', (e) => e.preventDefault());
+
+  // 初期座標（上大岡駅周辺）
+  const DEFAULT_LAT = 35.4095;
+  const DEFAULT_LNG = 139.5965;
+
+  let items = []; // 物件データ配列
+  let activeId = null; // 現在選択中のアイテムID
+  let markers = {}; // Leafletマーカー管理
+
+  // 地図初期化（referrerPolicyを追加して403エラーを回避）
+  const map = L.map('map').setView([DEFAULT_LAT, DEFAULT_LNG], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    referrerPolicy: 'no-referrer-when-downgrade'
+  }).addTo(map);
+
+  // 地図クリックで選択中アイテムの位置を更新
+  map.on('click', (e) => {
+    if (!activeId) return;
+    const item = items.find(i => i.id === activeId);
+    if (item) {
+      item.lat = Number(e.latlng.lat.toFixed(6));
+      item.lng = Number(e.latlng.lng.toFixed(6));
+      item.hasGps = true;
+      updateMarker(item);
+      renderList();
+    }
+  });
+
+  // 語源辞書（自動推測アシスト用）
+  const etymologyDict = [
+    { key: 'アンシャンテ', hint: '【フランス語】Enchanté：「はじめまして」「魅力的な」の意味。入居者との新しい出会いを歓迎する言葉。' },
+    { key: 'ハイム', hint: '【ドイツ語】Heim：「家・住まい・故郷」を意味する定番の建物用語。' },
+    { key: 'リリエン', hint: '【ドイツ語】Lilien：「ユリ（百合）」の複数形。清楚で気品あるイメージ。' },
+    { key: 'シエロ', hint: '【スペイン語/イタリア語】Cielo：「空・天国」の意味。開放感や明るい日差しを連想させる。' },
+    { key: 'パピヨン', hint: '【フランス語】Papillon：「蝶」の意味。軽やかで華やかなイメージ。' },
+    { key: 'サン', hint: '【英語/フランス語】Sun（太陽）または Saint（聖なる）の由来。' },
+    { key: 'パレス', hint: '【英語】Palace：「宮殿・大邸宅」の意味。' },
+    { key: 'メゾン', hint: '【フランス語】Maison：「家・建物」の意味。' },
+    { key: 'カーサ', hint: '【イタリア語/スペイン語】Casa：「家・家庭」の意味。' },
+    { key: 'ヴィラ', hint: '【英語/イタリア語】Villa：「別荘・郊外の邸宅」の意味。' },
+    { key: 'コーポ', hint: '【和製英語】Corporate house（共同住宅）の略。日本のアパート命名の王道。' },
+    { key: 'ハイツ', hint: '【英語】Heights：「高台・丘」の意味。' },
+    { key: 'シャトー', hint: '【フランス語】Château：「城・大邸宅」の意味。' },
+    { key: 'ボヌール', hint: '【フランス語】Bonheur：「幸福・幸運」の意味。' },
+    { key: 'エスポワール', hint: '【フランス語】Espoir：「希望」の意味。' },
+    { key: 'ソレイユ', hint: '【フランス語】Soleil：「太陽」の意味。' },
+    { key: 'ルミエール', hint: '【フランス語】Lumière：「光・輝き」の意味。' }
+  ];
+
+  // ドラッグ＆ドロップ設定
+  const dropZone = document.getElementById('dropZone');
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
+    }
+  });
+  document.getElementById('fileInput').addEventListener('change', (e) => handleFiles(e.target.files));
+
+  // ファイル処理
+  async function handleFiles(files) {
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue;
+
+      const id = 'apt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      
+      // Exif GPS取得
+      let lat = DEFAULT_LAT;
+      let lng = DEFAULT_LNG;
+      let hasGps = false;
+      try {
+        const gps = await exifr.gps(file);
+        if (gps && gps.latitude && gps.longitude) {
+          lat = Number(gps.latitude.toFixed(6));
+          lng = Number(gps.longitude.toFixed(6));
+          hasGps = true;
+        }
+      } catch (err) {
+        console.warn('GPS読み取りスキップ:', file.name);
+      }
+
+      // 画像をリサイズ＆Exif除去してDataURL化
+      const cleanDataUrl = await resizeAndCleanImage(file, 1000);
+
+      const newItem = {
+        id: id,
+        name: file.name.replace(/\.[^/.]+$/, ""), // 仮の名前としてファイル名を設定
+        language: '',
+        meaning: '',
+        lat: lat,
+        lng: lng,
+        hasGps: hasGps,
+        imageFileName: `${id}.jpg`,
+        imageDataUrl: cleanDataUrl
+      };
+
+      items.push(newItem);
+      activeId = id;
+      updateMarker(newItem);
+      if (hasGps) map.setView([lat, lng], 16);
+    }
+    renderList();
+  }
+
+  // 画像リサイズ＆Exif完全消去関数
+  function resizeAndCleanImage(file, maxWidth) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width;
+          let h = img.height;
+          if (w > maxWidth) {
+            h = Math.round((h * maxWidth) / w);
+            w = maxWidth;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // 地図マーカー更新
+  function updateMarker(item) {
+    if (markers[item.id]) {
+      markers[item.id].setLatLng([item.lat, item.lng]);
+      markers[item.id].setPopupContent(`<strong>${escapeHtml(item.name)}</strong>`);
+    } else {
+      const marker = L.marker([item.lat, item.lng], { draggable: true }).addTo(map);
+      marker.bindPopup(`<strong>${escapeHtml(item.name)}</strong>`);
+      marker.on('dragend', (e) => {
+        const pos = e.target.getLatLng();
+        item.lat = Number(pos.lat.toFixed(6));
+        item.lng = Number(pos.lng.toFixed(6));
+        item.hasGps = true;
+        renderList();
+      });
+      marker.on('click', () => {
+        activeId = item.id;
+        renderList();
+      });
+      markers[item.id] = marker;
+    }
+  }
+
+  // 語源自動推測アシスト
+  function autoGuessMeaning(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    let hints = [];
+    etymologyDict.forEach(entry => {
+      if (item.name.includes(entry.key)) {
+        hints.push(entry.hint);
+      }
+    });
+
+    if (hints.length > 0) {
+      item.meaning = hints.join('\n') + (item.meaning ? '\n' + item.meaning : '');
+    } else {
+      alert('辞書に一致する定番キーワードが見つかりませんでした。自由に由来を記入してください！');
+    }
+    renderList();
+  }
+
+  // リスト描画
+  function renderList() {
+    const listEl = document.getElementById('itemList');
+    if (items.length === 0) {
+      listEl.innerHTML = '<p style="color:#94a3b8; text-align:center; padding:40px 0;">写真をドロップするとここに編集カードが追加されます</p>';
+      return;
+    }
+
+    listEl.innerHTML = items.map(item => `
+      <div class="card ${item.id === activeId ? 'active' : ''}" onclick="selectItem('${item.id}')">
+        <div class="card-header">
+          <img src="${item.imageDataUrl}" class="card-thumb" alt="preview" />
+          <div class="card-fields">
+            <div style="display:flex; gap:6px;">
+              <input type="text" placeholder="建物名（例：アンシャンテ上大岡）" value="${escapeHtml(item.name)}"
+                onchange="updateField('${item.id}', 'name', this.value)" />
+              <button class="outline" onclick="event.stopPropagation(); autoGuessMeaning('${item.id}')" title="建物名から語源ヒントを自動入力">✨語源ヒント</button>
+            </div>
+            <input type="text" placeholder="言語・分類（例：フランス語 / オーナー苗字系）" value="${escapeHtml(item.language)}"
+              onchange="updateField('${item.id}', 'language', this.value)" />
+            <textarea placeholder="名前の意味や推測、銘板デザインの感想など..."
+              onchange="updateField('${item.id}', 'meaning', this.value)">${escapeHtml(item.meaning)}</textarea>
+          </div>
+        </div>
+        <div class="meta-row">
+          <div>
+            <span class="badge ${item.hasGps ? 'gps-ok' : 'gps-none'}">
+              ${item.hasGps ? `📍 緯度:${item.lat}, 経度:${item.lng}` : '⚠️ 位置情報なし（地図クリックで指定）'}
+            </span>
+          </div>
+          <button class="danger" onclick="event.stopPropagation(); deleteItem('${item.id}')">削除</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function selectItem(id) {
+    activeId = id;
+    const item = items.find(i => i.id === id);
+    if (item) {
+      map.panTo([item.lat, item.lng]);
+      if (markers[id]) markers[id].openPopup();
+    }
+    renderList();
+  }
+
+  function updateField(id, field, value) {
+    const item = items.find(i => i.id === id);
+    if (item) {
+      item[field] = value;
+      if (field === 'name') updateMarker(item);
+    }
+  }
+
+  function deleteItem(id) {
+    items = items.filter(i => i.id !== id);
+    if (markers[id]) {
+      map.removeLayer(markers[id]);
+      delete markers[id];
+    }
+    renderList();
+  }
+
+  // 公開用ZIP（data.json + imagesフォルダ）一括書き出し
+  async function exportAll() {
+    if (items.length === 0) {
+      alert('書き出すデータがありません。先に写真をアップロードしてください。');
+      return;
+    }
+
+    const zip = new JSZip();
+    const imgFolder = zip.folder("images");
+
+    const exportData = items.map(item => {
+      const base64Data = item.imageDataUrl.split(',')[1];
+      imgFolder.file(item.imageFileName, base64Data, { base64: true });
+
+      return {
+        id: item.id,
+        name: item.name,
+        language: item.language,
+        meaning: item.meaning,
+        lat: item.lat,
+        lng: item.lng,
+        image: `images/${item.imageFileName}`
+      };
+    });
+
+    zip.file("data.json", JSON.stringify(exportData, null, 2));
+
+    const content = await zip.generateAsync({ type: "blob" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(content);
+    a.download = "apartment-zukan-data.zip";
+    a.click();
+  }
+
+  // 既存のdata.json読み込み
+  document.getElementById('jsonInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const loaded = JSON.parse(ev.target.result);
+        loaded.forEach(d => {
+          const item = {
+            ...d,
+            hasGps: true,
+            imageFileName: d.image.replace('images/', ''),
+            imageDataUrl: d.image
+          };
+          items.push(item);
+          updateMarker(item);
+        });
+        renderList();
+        alert(`${loaded.length}件のデータを読み込みました！`);
+      } catch (err) {
+        alert('JSONファイルの読み込みに失敗しました。');
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  }
+</script>
+</body>
+</html>
