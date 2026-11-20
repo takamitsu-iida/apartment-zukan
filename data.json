@@ -1,0 +1,75 @@
+[
+  {
+    "id": "apt_0591",
+    "name": "アンシャンテ上大岡",
+    "language": "フランス語 (Enchanté)",
+    "meaning": "「はじめまして」「お会いできて嬉しいです」という挨拶、または「魔法にかけられた（魅力的な）」という意味。新しい生活や入居者との新しい出会いを歓迎する温かい思いが込められています。",
+    "lat": 35.408492,
+    "lng": 139.590836,
+    "image": "images/samples/optimized/IMG_0591.jpeg"
+  },
+  {
+    "id": "apt_0608",
+    "name": "上大岡 リリエンハイム",
+    "language": "ドイツ語 (Lilien ＋ Heim)",
+    "meaning": "Lilien（ユリ／百合）＋ Heim（家・住まい）を合わせた「ユリの家」という意味。銘板の下部にもユリの花のイラストが美しく刻印されており、視覚と意味が一体となったデザインです。",
+    "lat": 35.405950,
+    "lng": 139.584808,
+    "image": "images/samples/optimized/IMG_0608.jpeg"
+  },
+  {
+    "id": "apt_0619",
+    "name": "HERMIT CRAB HOUSE",
+    "language": "英語 (Hermit Crab House)",
+    "meaning": "直訳すると「ヤドカリの家」。賃貸住宅を「成長に合わせて住み替えるヤドカリの貝殻」に見立てた、最高にユーモアとセンスが効いたネーミングです。「O」と「U」が重なるタイポグラフィもおしゃれです。",
+    "lat": 35.408803,
+    "lng": 139.588700,
+    "image": "images/samples/optimized/IMG_0619.jpeg"
+  },
+  {
+    "id": "apt_0626",
+    "name": "リーヴェルポート上大岡 シエロ",
+    "language": "英語造語 ＋ スペイン語/イタリア語 (Cielo)",
+    "meaning": "Port（港・拠点）に、Cielo（空・天国）を組み合わせた名前。赤い筆記体のロゴが印象的で、空へと開けた開放感のある爽やかな住まいをイメージさせます。",
+    "lat": 35.408628,
+    "lng": 139.588075,
+    "image": "images/samples/optimized/IMG_0626.jpeg"
+  },
+  {
+    "id": "apt_0628",
+    "name": "サン パピヨン カサハラ",
+    "language": "英語 ＋ フランス語 ＋ オーナー苗字",
+    "meaning": "「太陽（Sun）」＋「蝶（Papillon）」＋オーナーの苗字「笠原」を掛け合わせた、日本のアパート命名の王道を行くハイブリッド型。レトロなフォントの銘板に味があります。",
+    "lat": 35.408069,
+    "lng": 139.588167,
+    "image": "images/samples/optimized/IMG_0628.jpeg"
+  },
+  {
+    "id": "apt_0630",
+    "name": "PREMIST 上大岡",
+    "language": "英語の造語 (Premium ＋ -ist)",
+    "meaning": "大和ハウス工業の分譲マンションブランド。「上質な（Premium）」に「潤い・心地よさ」や「〜する人（-ist）」を掛け合わせた、洗練されたスマートなネーミングです。",
+    "lat": 35.405261,
+    "lng": 139.586364,
+    "image": "images/samples/optimized/IMG_0630.jpeg"
+  },
+  {
+    "id": "apt_0622",
+    "name": "Kパレス ブラード",
+    "language": "イニシャル ＋ 英語 ＋ 造語",
+    "meaning": "オーナー様や管理会社の頭文字「K」に「宮殿（パレス）」を冠した名前。「ブラード」はBravo（素晴らしい）やPrado（草原）などの響きを取り入れた、鮮やかな青い壁面に映える物件です。",
+    "lat": 35.408886,
+    "lng": 139.588286,
+    "image": "images/samples/optimized/IMG_0622.jpeg"
+  },
+  {
+    "id": "apt_0637",
+    "name": "エル リストン・セレナ (El Liston Serena)",
+    "language": "スペイン語 (El Listón ＋ Serena)",
+    "meaning": "スペイン語で「El Listón（リボン・帯／木片の装飾）」と「Serena（穏やかな・晴朗な・澄み切った）」を組み合わせたネーミング。赤レンガのアーチに深緑色の銘板、ボタニカル（植物）のシルバー装飾が映えるクラシカルで上品なデザインです。",
+    "lat": 35.406500,
+    "lng": 139.595000,
+    "image": "images/samples/optimized/IMG_0637.jpeg"
+  }
+
+]

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏢 珍名アパート・マンション図鑑</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root { --primary: #2563eb; --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding: 0; }
+
+    header { background: #1e293b; color: #fff; padding: 20px; text-align: center; }
+    header h1 { margin: 0; font-size: 1.5rem; }
+    header p { margin: 5px 0 0; color: #94a3b8; font-size: 0.9rem; }
+
+    .main-container { max-width: 1200px; margin: 20px auto; padding: 0 15px; display: grid; grid-template-columns: 1fr 400px; gap: 20px; }
+    @media (max-width: 900px) { .main-container { grid-template-columns: 1fr; } }
+
+    /* 地図エリア */
+    #map { height: 500px; border-radius: 12px; border: 1px solid var(--border); width: 100%; position: sticky; top: 20px; }
+
+    /* 物件カード一覧 */
+    .card-list { display: flex; flex-direction: column; gap: 15px; }
+    .apt-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: 0.2s; cursor: pointer;
+    }
+    .apt-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: var(--primary); }
+    .apt-card.active { border: 2px solid var(--primary); }
+
+    .apt-img { width: 100%; height: 200px; object-fit: contain; background: #e2e8f0; }
+    .apt-body { padding: 15px; }
+
+    .apt-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .apt-name { font-size: 1.2rem; font-weight: bold; margin: 0; color: #0f172a; }
+    .apt-lang { background: #eff6ff; color: var(--primary); font-size: 0.75rem; padding: 3px 8px; border-radius: 99px; font-weight: bold; white-space: nowrap; }
+
+    .apt-meaning { font-size: 0.9rem; color: #475569; margin: 0; line-height: 1.5; white-space: pre-wrap; }
+
+    footer { text-align: center; padding: 30px; color: #64748b; font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🏢 珍名アパート・マンション図鑑</h1>
+    <p>街で見つけたユニークな名前の建物の由来と場所を紐解くローカル調査ファイル</p>
+  </header>
+
+  <div class="main-container">
+    <!-- 左側：カード一覧 -->
+    <div class="card-list" id="cardList">
+      <p style="text-align:center; color:#94a3b8; padding:40px;">データを読み込み中...</p>
+    </div>
+
+    <!-- 右側：地図 -->
+    <div>
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 珍名アパート図鑑 / Hosted on GitHub Pages</p>
+  </footer>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map;
+    let markers = {};
+    let items = [];
+
+    // 地図初期化
+    function initMap(lat, lng) {
+      map = L.map('map').setView([lat, lng], 14);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        referrerPolicy: 'no-referrer-when-downgrade'
+      }).addTo(map);
+    }
+
+    // data.jsonの読み込み
+    async function loadData() {
+      try {
+        const res = await fetch('data.json');
+        if (!res.ok) throw new Error('data.jsonが見つかりませんでした');
+        items = await res.json();
+
+        if (items.length === 0) {
+          document.getElementById('cardList').innerHTML = '<p style="text-align:center; color:#94a3b8;">登録されている物件がまだありません。</p>';
+          return;
+        }
+
+        // 初期マップ中心は最初の物件の座標、なければ上大岡付近
+        initMap(items[0].lat || 35.4095, items[0].lng || 139.5965);
+        renderList();
+        renderMarkers();
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('cardList').innerHTML = `
+          <div style="background:#fee2e2; color:#991b1b; padding:20px; border-radius:8px;">
+            <strong>⚠️ データ読み込みエラー</strong><br>
+            <small>data.json が同じ階層に見つからないか、データ形式が正しくありません。</small>
+          </div>`;
+      }
+    }
+
+    // 一覧リストの描画
+    function renderList() {
+      const listEl = document.getElementById('cardList');
+      listEl.innerHTML = items.map(item => `
+        <div class="apt-card" id="card_${item.id}" onclick="focusItem('${item.id}')">
+          <img src="${item.image}" class="apt-img" alt="${escapeHtml(item.name)}" loading="lazy" />
+          <div class="apt-body">
+            <div class="apt-title-row">
+              <h2 class="apt-name">${escapeHtml(item.name)}</h2>
+              ${item.language ? `<span class="apt-lang">${escapeHtml(item.language)}</span>` : ''}
+            </div>
+            <p class="apt-meaning">${escapeHtml(item.meaning || '（由来の解説準備中）')}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 地図マーカーの配置
+    function renderMarkers() {
+      items.forEach(item => {
+        const marker = L.marker([item.lat, item.lng]).addTo(map);
+        marker.bindPopup(`
+          <div style="text-align:center; min-width:140px;">
+            <img src="${item.image}" style="width:100%; height:90px; object-fit:contain; border-radius:4px; margin-bottom:5px;" />
+            <strong>${escapeHtml(item.name)}</strong>
+          </div>
+        `);
+        marker.on('click', () => highlightCard(item.id));
+        markers[item.id] = marker;
+      });
+    }
+
+    // カードをクリックしたときの動作
+    function focusItem(id) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      // 地図移動＆ポップアップ
+      map.flyTo([item.lat, item.lng], 16, { duration: 0.8 });
+      if (markers[id]) markers[id].openPopup();
+
+      // カードのアクティブ表示切り替え
+      document.querySelectorAll('.apt-card').forEach(c => c.classList.remove('active'));
+      const card = document.getElementById(`card_${id}`);
+      if (card) {
+        card.classList.add('active');
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    // マーカーをクリックしたときのカードハイライト
+    function highlightCard(id) {
+      document.querySelectorAll('.apt-card').forEach(c => c.classList.remove('active'));
+      const card = document.getElementById(`card_${id}`);
+      if (card) {
+        card.classList.add('active');
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    // 起動時実行
+    loadData();
+  </script>
+</body>
+</html>

@@ -311,13 +311,13 @@
           <div class="card-fields">
             <div style="display:flex; gap:6px;">
               <input type="text" placeholder="建物名（例：アンシャンテ上大岡）" value="${escapeHtml(item.name)}"
-                onchange="updateField('${item.id}', 'name', this.value)" />
+                onclick="event.stopPropagation()" onchange="updateField('${item.id}', 'name', this.value)" />
               <button class="outline" onclick="event.stopPropagation(); autoGuessMeaning('${item.id}')" title="建物名から語源ヒントを自動入力">✨語源ヒント</button>
             </div>
             <input type="text" placeholder="言語・分類（例：フランス語 / オーナー苗字系）" value="${escapeHtml(item.language)}"
-              onchange="updateField('${item.id}', 'language', this.value)" />
+              onclick="event.stopPropagation()" onchange="updateField('${item.id}', 'language', this.value)" />
             <textarea placeholder="名前の意味や推測、銘板デザインの感想など..."
-              onchange="updateField('${item.id}', 'meaning', this.value)">${escapeHtml(item.meaning)}</textarea>
+              onclick="event.stopPropagation()" onchange="updateField('${item.id}', 'meaning', this.value)">${escapeHtml(item.meaning)}</textarea>
           </div>
         </div>
         <div class="meta-row">
