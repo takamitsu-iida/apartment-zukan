@@ -2,8 +2,11 @@
 
 > 「なんだこれ！？」街で見つけた面白すぎる・カッコよすぎる・謎すぎる名前のアパートやマンションを、写真と地図でひたすらコレクションしていく個人開発のWeb図鑑です。🕵️‍♂️🗺️
 
+いずれスマホアプリにしようと思いますが、まずは静的なウェブページで動作を確認中です。
+
+ライブでもはこちら（↓）のGithub Pagesから確認できます。
+
 [![GitHub Pages](https://img.shields.io/badge/Hosted%20on-GitHub%20Pages-2ea44f?style=for-the-badge&logo=github)](https://takamitsu-iida.github.io/apartment-zukan/)
-[![Status](https://img.shields.io/badge/Status-Active%20Collecting-ff69b4?style=for-the-badge&logo=ghostscript)](https://takamitsu-iida.github.io/apartment-zukan/)
 
 <br>
 
