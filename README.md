@@ -6,7 +6,7 @@
 
 ライブでもはこちら（↓）のGithub Pagesから確認できます。
 
-[![GitHub Pages](https://img.shields.io/badge/Hosted%20on-GitHub%20Pages-2ea44f?style=for-the-badge&logo=github)](https://takamitsu-iida.github.io/apartment-zukan/)
+[ライブデモ](https://takamitsu-iida.github.io/apartment-zukan/)
 
 <br>
 
