@@ -38,16 +38,7 @@
 
 * **Frontend:** HTML5, CSS3, JavaScript (Vanilla JS)
 * **Map:** Leaflet.js + OpenStreetMap
-* **Exif Reader:** exifr (写真からGPSを自動抽出！)
+* **Exif Reader:** exifr (写真からGPSを自動抽出)
 * **Hosting:** GitHub Pages
 
 サンプル画像は `images/samples/optimized/` の長辺最大1000px・Exif除去済み画像を表示し、元画像は `images/samples/` に残しています。`data.json` の `image` には公開用画像のパスを指定します。
-
-<br><br>
-
----
-
-<div align="center">
-  <p>Made with 💖 & 🏢 by Takamitsu Iida</p>
-  <p>Let's enjoy walking and finding funny apartment names!</p>
-</div>
