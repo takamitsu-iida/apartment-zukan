@@ -1,12 +1,20 @@
-# 🏢✨ 珍名アパート・マンション図鑑 (Unusual Apartment Zukan)
+# 🏢✨ 珍名アパート図鑑 (Unusual Apartment Zukan)
 
-> 「なんだこれ！？」街で見つけた面白すぎる・カッコよすぎる・謎すぎる名前のアパートやマンションを、写真と地図でひたすらコレクションしていく個人開発のWeb図鑑です。🕵️‍♂️🗺️
+<br>
 
-いずれスマホアプリにしようと思いますが、まずは静的なウェブページで動作を確認中です。
+街で見つけた面白い名前のアパートやマンションを、写真と地図でコレクションしていくWeb図鑑です。🕵️‍♂️🗺️
+
+<br>
+
+> [!NOTE]
+>
+> いつかはスマホアプリに挑戦したいと思っていますが、まずは静的なウェブページで動作を確認中です。
+
+<br>
 
 ライブでもはこちら（↓）のGithub Pagesから確認できます。
 
-[ライブデモ](https://takamitsu-iida.github.io/apartment-zukan/)
+[ライブデモ（Github Pages）](https://takamitsu-iida.github.io/apartment-zukan/)
 
 <br>
 
@@ -40,5 +48,3 @@
 * **Map:** Leaflet.js + OpenStreetMap
 * **Exif Reader:** exifr (写真からGPSを自動抽出)
 * **Hosting:** GitHub Pages
-
-サンプル画像は `images/samples/optimized/` の長辺最大1000px・Exif除去済み画像を表示し、元画像は `images/samples/` に残しています。`data.json` の `image` には公開用画像のパスを指定します。
